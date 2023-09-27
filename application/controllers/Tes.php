@@ -1,29 +1,42 @@
-<?php 
+<?php
 
-	class Tes extends CI_Controller{
-		
-		public function __construct(){
-			parent::__construct();
-			$this->load->helper('my_helper');
-			$this->load->library('DateLb');
-		}
+use Dompdf\Dompdf;
+use Dompdf\Options;
 
-		public function index(){
-			$angka = 123;
-			$romawi = 'CXXIII';
+class Tes extends CI_Controller
+{
 
-			$data['res1'] = int_to_roman($angka);
-			$data['res2'] = roman_to_int($romawi);
-			$data['res3'] = $this->datelb->dateymd();
-			$data['res4'] = $this->datelb->datedmy();
-			$data['angka'] = $angka;
-			$data['romawi'] = $romawi;
-
-
-			return $this->load->view('index',$data);
-			
-		}
-
-
+	function __construct()
+	{
+		parent::__construct();
+		$this->load->helper('url');
+		$this->load->model("UserModel");
+		$this->load->library('Pdf');
 	}
-?>
+
+	function index()
+	{
+		$path = base_url('public/q.jpg');
+		$type = pathinfo($path, PATHINFO_EXTENSION);
+		$data = file_get_contents($path);
+		$base64 = 'data:image/' . $type . ';base64,' . base64_encode($data);
+
+		$options = new Options();
+		$options->setDefaultPaperSize([0,0,520,286.5]);
+		$dompdf = new Dompdf($options);
+
+		$user = $this->UserModel->get();
+
+		$data = array(	
+			"profile_picture" => $base64,
+			"identity" => $user
+		);
+
+		$dompdf->loadHtml($this->load->view('card', $data, true));
+
+		$dompdf->render();
+		$dompdf->stream('tes.pdf',[
+			'Attachment' => 0
+		]);
+	}
+}
